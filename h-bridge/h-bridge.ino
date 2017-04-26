@@ -1,14 +1,17 @@
-int hBridgeInput1 = 4;
-int hBridgeInput2 = 2; 
-int hBridgeInput3 = 7;
-int hBridgeInput4 = 6;
+int hBridge1Input1 = 4;
+int hBridge1Input2 = 2; 
+int hBridge1Input3 = 7;
+int hBridge1Input4 = 6;
+int hBridge2Input1 = 10;
+int hBridge2Input2 = 11;
 int speedPinA = 3; // Needs to be a PWM pin to be able to control motor speed.
 int speedPinB = 5;
+int speedPinC = 9; // enable pin on hbridge
 int led = 13;
 
-#define NUM_INPUTS 4
-int hBridgeInput[NUM_INPUTS] = {
-  4, 2, 6, 7
+#define NUM_INPUTS 6
+int hBridge1Input[NUM_INPUTS] = {
+  4, 2, 6, 7, 10, 11
 };
 
 enum dir {
@@ -26,8 +29,9 @@ struct Bead {
 dir currDir = FORWARD;
 void setDirection(dir newDir);
 
-Bead bead1 = {hBridgeInput1, hBridgeInput2, speedPinA, FORWARD};
-Bead bead2 = {hBridgeInput4, hBridgeInput3, speedPinB, FORWARD};
+Bead bead1 = {hBridge1Input1, hBridge1Input2, speedPinA, FORWARD};
+Bead bead2 = {hBridge1Input4, hBridge1Input3, speedPinB, FORWARD};
+Bead bead3 = {hBridge2Input1, hBridge2Input2, speedPinC, FORWARD};
 
 // Function definitions. The Arduino preprocessor apparently doesn't work correctly for
 // custom-defined types?
@@ -39,21 +43,9 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   for (int i = 0; i < NUM_INPUTS; i++) {
-    pinMode(hBridgeInput[i], OUTPUT);
+    pinMode(hBridge1Input[i], OUTPUT);
   }
   pinMode(led, OUTPUT);
-}
-
-void testBead(dir newDir) {
-  if (newDir == FORWARD) {
-    
-  }
-}
-
-void setDirectionNew(dir newDir) {
-  if (newDir == FORWARD) {
-    
-  }
 }
 
 void setDirection(dir newDir) {
@@ -62,12 +54,12 @@ void setDirection(dir newDir) {
     for (int i = 0; i < NUM_INPUTS; i++) {
       Serial.print("i: ");
       Serial.println(i);
-      Serial.print("hBridgeInput[i]: ");
-      Serial.println(hBridgeInput[i]);
+      Serial.print("hBridge1Input[i]: ");
+      Serial.println(hBridge1Input[i]);
       if (i%2 == 0) {
-        digitalWrite(hBridgeInput[i], LOW);
+        digitalWrite(hBridge1Input[i], LOW);
       } else {
-        digitalWrite(hBridgeInput[i], HIGH);
+        digitalWrite(hBridge1Input[i], HIGH);
       } 
     }
   } else {
@@ -75,12 +67,12 @@ void setDirection(dir newDir) {
       for (int i = 0; i < NUM_INPUTS; i++) {
         Serial.print("i: ");
       Serial.println(i);
-      Serial.print("hBridgeInput[i]: ");
-      Serial.println(hBridgeInput[i]);
+      Serial.print("hBridge1Input[i]: ");
+      Serial.println(hBridge1Input[i]);
         if (i%2 == 0) {
-          digitalWrite(hBridgeInput[i], HIGH);
+          digitalWrite(hBridge1Input[i], HIGH);
         } else {
-          digitalWrite(hBridgeInput[i], LOW);
+          digitalWrite(hBridge1Input[i], LOW);
         }
       }
     }
@@ -114,16 +106,28 @@ void loop() {
   Serial.println(bead1.inputB);
   Serial.print("bead2.inputA: ");
   Serial.println(bead2.inputA);
+  
   Serial.print("bead2.inputB: ");
   Serial.println(bead2.inputB);
+ 
   Serial.print("bead1.enablePin: ");
   Serial.println(bead1.enablePin);
   Serial.print("bead2.enablePin: ");
   Serial.println(bead2.enablePin);
+  
   Serial.print("bead1.currDir: ");
   Serial.println(bead1.currDir);
   Serial.print("bead2.currDir: ");
   Serial.println(bead2.currDir);
+
+  Serial.print("bead3.inputA: ");
+  Serial.println(bead3.inputA);
+  Serial.print("bead3.inputB: ");
+  Serial.println(bead3.inputB);
+  Serial.print("bead3.enablePin: ");
+  Serial.println(bead3.enablePin);
+  Serial.print("bead3.currDir: ");
+  Serial.println(bead3.currDir);
 
   Serial.print("currDir: ");
   Serial.println(currDir);
@@ -135,19 +139,9 @@ void loop() {
   }
   
   //flipBead(&bead1);
-  flipBead(&bead2);
-
-  Serial.print("speedPinA: ");
-  Serial.println(speedPinA);
-  Serial.print("speedPinB: ");
-  Serial.println(speedPinB);
-  //setDirection(currDir);
-  //analogWrite(speedPinA, 150);
-  //analogWrite(speedPinB, 150);
+  //flipBead(&bead2);
   
-  delay(3000);
-  
-  //plasma();
+  plasma();
 }
 
 // Convenient 2D point structure
@@ -157,7 +151,7 @@ struct Point {
 };
 
 float phase = 0.0;
-float phaseIncrement = 0.01;  // Controls the speed of the moving points. Higher == faster. I like 0.08 .
+float phaseIncrement = 0.08;  // Controls the speed of the moving points. Higher == faster. I like 0.08 .
 float colorStretch = 0.11;    // Higher numbers will produce tighter color bands. I like 0.11 .
 
 float lastColor_1;
@@ -221,21 +215,32 @@ void plasma() {
       Serial.print("color_3: ");
       Serial.println(color_3);
 
-      if (triggerFlip(color_1, lastColor_1)) {
+      if (triggerFlip(color_1, lastColor_1, 1)) {
       //if (true) {
         flipBead(&bead1); 
       }
+      delay(300);
+
+      if (triggerFlip(color_2, lastColor_2, 5)) {
+        flipBead(&bead2);
+      }
+      delay(500);
+
+      if (triggerFlip(color_3, lastColor_3, 3)) {
+        flipBead(&bead3);
+      }
+      delay(800);
 
       lastColor_1 = color_1;
       lastColor_2 = color_2;
       lastColor_3 = color_3;
-      delay(3000);
+      
     }
   }
 }
 
-boolean triggerFlip(float newColor, float oldColor) {
+boolean triggerFlip(float newColor, float oldColor, int threshold) {
   // if the difference is greater than some threshold
-  return (abs(oldColor - newColor) > 8);
+  return (abs(oldColor - newColor) > threshold);
 }
 
